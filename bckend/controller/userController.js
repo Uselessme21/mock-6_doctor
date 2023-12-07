@@ -32,7 +32,7 @@ const signin= async (req, res) => {
   const signup = async (req, res) => {
     const { email, password, confirmPassword } = req.body;
       
-     const userExists = User.find(email)
+     const userExists =await User.findOne({email})
      if(userExists){
       return res.status(400).json({ error: 'user already exists' });
      }
