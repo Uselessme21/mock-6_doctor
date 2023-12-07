@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Dashboard</title>
+    <style>
+
+.container0 {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin-top: 90px; 
+}
+
+.dashboard-container {
+    padding: 20px;
+}
+
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.controls label {
+    margin-right: 10px;
+}
+
+input, select, button {
+    padding: 8px;
+    box-sizing: border-box;
+}
+
+#refresh-btn {
+    cursor: pointer;
+    background-color: #4caf50;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+}
+
+#refresh-btn:hover {
+    background-color: #45a049;
+}
+
+.doctor-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+    width: 300px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.card img {
+    width: 100%;
+    border-radius: 4px;
+}
+
+.card button {
+    margin-top: 10px;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgb(0, 0, 0);
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: #000;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+#edit-form {
+    display: flex;
+    flex-direction: column;
+}
+
+#edit-form label {
+    margin-bottom: 8px;
+}
+
+    </style>
+    <link rel="stylesheet" href="./css/common.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">
+            <span>Hospital</span>
+        </div>
+        <ul class="nav-links">
+            <li><a href="../index.html">Signup & Login</a></li>
+            <li><a href="./onbord.html">Doctor Onboard</a></li>
+            <li><a href="./dashboard.html">Doctor Dashboard</a></li>
+        </ul>
+    </nav>
+
+    <div class="container0">
+        <div class="dashboard-container">
+            <div class="controls">
+                <label for="specialization-filter">Filter by Specialization:</label>
+                <select id="specialization-filter">
+                    <option value="">All</option>
+                    <option value="Cardiologist">Cardiologist</option>
+                    <option value="Dermatologist">Dermatologist</option>
+                    <option value="Pediatrician">Pediatrician</option>
+                    <option value="Psychiatrist">Psychiatrist</option>
+                </select>
+
+                <label for="sort-date">Sort by Date:</label>
+                <input type="checkbox" id="sort-date">
+
+                <label for="search">Search by Name:</label>
+                <input type="text" id="search">
+
+                <button id="refresh-btn">Refresh</button>
+            </div>
+
+            <div id="doctor-cards" class="doctor-cards">
+                <!-- Doctor cards will be dynamically added here -->
+            </div>
+        </div>
+    </div>
+<!--  -->
+
+ 
+ <div id="edit-modal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <form id="edit-form">
+         
+            <label for="edit-name">Name:</label>
+            <input type="text" id="edit-name" required>
+
+            <label for="edit-image">Image URL:</label>
+            <input type="text" id="edit-image">
+
+            <label for="edit-specialization">Specialization:</label>
+            <select id="edit-specialization" required>
+                <option value="Cardiologist">Cardiologist</option>
+                <option value="Dermatologist">Dermatologist</option>
+                <option value="Pediatrician">Pediatrician</option>
+                <option value="Psychiatrist">Psychiatrist</option>
+            </select>
+
+            <button type="submit">Save Changes</button>
+        </form>
+    </div>
+</div>
+  
+</body>
+</html>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const specializationFilter = document.getElementById('specialization-filter');
+        const sortDateCheckbox = document.getElementById('sort-date');
+        const searchInput = document.getElementById('search');
+        const refreshBtn = document.getElementById('refresh-btn');
+        const doctorCardsContainer = document.getElementById('doctor-cards');
+        const editModal = document.getElementById('edit-modal');
+        const editForm = document.getElementById('edit-form');
+        const editNameInput = document.getElementById('edit-name');
+        const editImageInput = document.getElementById('edit-image');
+        const editSpecializationInput = document.getElementById('edit-specialization');
+
+
+        const fetchDoctors = async (params) => {
+            try {
+                const token = localStorage.getItem('token');
+                const url = new URL('/doctors', 'http://localhost:8090');
+                if (params) {
+                    Object.entries(params).forEach(([key, value]) => {
+                        url.searchParams.set(key, value);
+                    });
+                }
+
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `${token}`,
+                    },
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch doctors');
+                }
+
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error fetching doctors:', error);
+                return [];
+            }
+        };
+
+        const displayDoctors = async () => {
+            const params = {
+                specialization: specializationFilter.value,
+                sort: sortDateCheckbox.checked ? 'date' : '',
+                search: searchInput.value,
+            };
+
+            const doctors = await fetchDoctors(params);
+
+            doctorCardsContainer.innerHTML = '';
+
+            doctors.forEach(doctor => {
+                const card = createDoctorCard(doctor);
+                doctorCardsContainer.appendChild(card);
+            });
+        };
+
+        const createDoctorCard = (doctor) => {
+            const card = document.createElement('div');
+            card.classList.add('card');
+
+
+    const img = document.createElement('img');
+    img.src = doctor.imageURL || 'placeholder-image.jpg';
+    img.alt = doctor.name;
+    card.appendChild(img);
+
+    const name = document.createElement('h3');
+    name.textContent = doctor.name;
+    card.appendChild(name);
+
+    const specialization = document.createElement('p');
+    specialization.textContent = `Specialization: ${doctor.specialization}`;
+    card.appendChild(specialization);
+
+    const experience = document.createElement('p');
+    experience.textContent = `Experience: ${doctor.experience} years`;
+    card.appendChild(experience);
+
+    const location = document.createElement('p');
+    location.textContent = `Location: ${doctor.location}`;
+    card.appendChild(location);
+
+    const date = document.createElement('p');
+    date.textContent = `Date: ${new Date(doctor.date).toLocaleDateString()}`;
+    card.appendChild(date);
+
+    const slots = document.createElement('p');
+    slots.textContent = `Slots: ${doctor.slots}`;
+    card.appendChild(slots);
+
+    const fee = document.createElement('p');
+    fee.textContent = `Fee: $${doctor.fee}`;
+    card.appendChild(fee);
+
+   
+          
+
+            const editBtn = document.createElement('button');
+            editBtn.textContent = 'Edit';
+            editBtn.addEventListener('click', () => handleEdit(doctor));
+            card.appendChild(editBtn);
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.addEventListener('click', () => handleDelete(doctor._id));
+            card.appendChild(deleteBtn);
+
+            return card;
+        };
+
+      
+
+        const openEditModal = (doctor) => {
+            editNameInput.value = doctor.name;
+            editImageInput.value = doctor.image || '';
+            editSpecializationInput.value = doctor.specialization;
+
+            editModal.style.display = 'block';
+        };
+
+       
+        const closeEditModal = () => {
+            editModal.style.display = 'none';
+        };
+
+        const handleEdit = (doctor) => {
+            openEditModal(doctor);
+
+            
+            editForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+
+                const editedData = {
+                    name: editNameInput.value,
+                    imageURL: editImageInput.value,
+                    specialization: editSpecializationInput.value,
+                   
+                };
+
+               
+                try {
+                    const token = localStorage.getItem('token');
+                    const response = await fetch(`http://localhost:8090/updatedoctors/${doctor._id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `${token}`,
+                        },
+                        body: JSON.stringify(editedData),
+                    });
+
+                    if (response.ok) {
+                       
+                        closeEditModal();
+                        displayDoctors();
+                    } else {
+                        console.error('Failed to update doctor');
+                    }
+                } catch (error) {
+                    console.error('Error updating doctor:', error);
+                }
+            });
+        };
+
+        const closeModalButton = document.querySelector('.close');
+        if (closeModalButton) {
+            closeModalButton.addEventListener('click', closeEditModal);
+        }
+
+        const handleDelete = async (doctorId) => {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`http://localhost:8090/deletedoctors/${doctorId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `${token}`,
+                    },
+                });
+
+                if (response.ok) {// Update UI after successful deletion
+                    displayDoctors();
+                } else {
+                    console.error('Failed to delete doctor');
+                }
+            } catch (error) {
+                console.error('Error deleting doctor:', error);
+            }
+        };
+
+        specializationFilter.addEventListener('change', displayDoctors);
+        sortDateCheckbox.addEventListener('change', displayDoctors);
+        searchInput.addEventListener('input', displayDoctors);
+        refreshBtn.addEventListener('click', displayDoctors);
+
+        // Initial display
+        displayDoctors();
+    });
+</script>

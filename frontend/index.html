@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   
+    <style>
+        body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background-color: #f5f5f5;
+}
+
+.container {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.form-container {
+    padding: 20px;
+}
+
+.toggle-btn-container {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+}
+
+button {
+    cursor: pointer;
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    background-color: #4caf50;
+    color: #fff;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+form#login-form {
+    display: none;
+}
+
+h2 {
+    text-align: center;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+}
+
+input {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 16px;
+    box-sizing: border-box;
+}
+
+button[type="submit"] {
+    width: 100%;
+    background-color: #4caf50;
+}
+
+button[type="submit"]:hover {
+    background-color: #45a049;
+}
+
+    </style>
+    <link rel="stylesheet" href="./pges/css/common.css">
+    <title>Signup & Login</title>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="logo">
+            <span>Hospital</span>
+        </div>
+        <ul class="nav-links">
+            <li><a href="./index.html">Signup & Login</a></li>
+            <li><a href="./pges/onbord.html">Doctor Onboard</a></li>
+            <li><a href="./pges/dashboard.html">Doctor Dashboard</a></li>
+        </ul>
+    </nav>
+    <div class="container">
+        <div class="form-container">
+            <div class="toggle-btn-container">
+                <button id="signup-btn">Signup</button>
+                <button id="login-btn">Login</button>
+            </div>
+            
+            <form id="signup-form">
+                <h2>Signup</h2>
+                <label for="email">Email:</label>
+                <input type="email" id="email" required>
+                
+                <label for="password">Password:</label>
+                <input type="password" id="password" required>
+                
+                <label for="confirm-password">Confirm Password:</label>
+                <input type="password" id="confirm-password" required>
+                
+                <button type="submit">Signup</button>
+            </form>
+            
+            <form id="login-form">
+                <h2>Login</h2>
+                <label for="login-email">Email:</label>
+                <input type="email" id="login-email" required>
+                
+                <label for="login-password">Password:</label>
+                <input type="password" id="login-password" required>
+                
+                <button type="submit">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const signupForm = document.getElementById('signup-form');
+            const loginForm = document.getElementById('login-form');
+            const signupBtn = document.getElementById('signup-btn');
+            const loginBtn = document.getElementById('login-btn');
+    
+            signupBtn.addEventListener('click', function () {
+                signupForm.style.display = 'block';
+                loginForm.style.display = 'none';
+            });
+    
+            loginBtn.addEventListener('click', function () {
+                signupForm.style.display = 'none';
+                loginForm.style.display = 'block';
+            });
+    
+            signupForm.addEventListener('submit', function (event) {
+                event.preventDefault();
+    
+                const formData = {
+                    email: document.querySelector('#email').value,
+                    password: document.querySelector('#password').value,
+                    confirmPassword: document.querySelector('#confirm-password').value
+                };
+    
+                fetch('http://localhost:8090/signup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData),
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        // 
+                        console.log('Signup successful:', data);
+                        alert(data.message  || data.error);
+                        signupForm.style.display = 'none';
+                        loginForm.style.display = 'block';
+                    })
+                    .catch(error => {
+                        //
+                        console.error('Signup failed:', error);
+                        alert('Signup failed');
+                    });
+            });
+    
+            loginForm.addEventListener('submit', function (event) {
+                event.preventDefault();
+    
+                const formData = {
+                    email: document.querySelector('#login-email').value,
+                    password: document.querySelector('#login-password').value
+                };
+    
+                fetch('http://localhost:8090/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData),
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        // 
+                        console.log('Login successful:', data);
+                        alert(data.message);
+                         if(data.message==='Sign-in successful'){
+                            localStorage.setItem('token', data.token)
+                            window.location.href='./pges/onbord.html'
+                        }
+                    })
+                    .catch(error => {
+                       
+                        console.error('Login failed:', error);
+                        alert(error.message);
+                    });
+            });
+        });
+    </script>
+    
+</body>
+</html>
